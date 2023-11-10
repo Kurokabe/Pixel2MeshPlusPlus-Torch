@@ -1,0 +1,34 @@
+seed_everything: true
+trainer:
+  devices:
+  - 0
+  - 1
+  - 2
+  - 3
+  accumulate_grad_batches: 1
+  accelerator: gpu
+  precision: 16
+  gradient_clip_val: 1.0
+  # limit_train_batches: 1000
+  # limit_val_batches: 100
+  # strategy: deepspeed_stage_3
+  # strategy: ddp_sharded
+  max_epochs: 50
+model:
+  hidden_dim: 192
+  last_hidden_dim: 192
+  coord_dim: 3
+  backbone: "vgg16"
+  gconv_activation: True
+  # provide a boundary for z, so that z will never be equal to 0, on denominator
+  # if z is greater than 0, it will never be less than z;
+  # if z is less than 0, it will never be greater than z.
+  z_threshold: 0
+  align_with_tensorflow: False
+  camera_f:
+    - 248.0
+    - 248.0
+  camera_c:
+    - 111.5
+    - 111.5
+data:
