@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Threshold
+from p2mpp.utils.camera import batch_camera_trans, batch_camera_trans_inv
 
 
 class GProjection(nn.Module):
@@ -68,7 +69,7 @@ class GProjection(nn.Module):
         output = Q11 + Q21 + Q12 + Q22
         return output
 
-    def forward(self, resolution, img_features, inputs):
+    def test(self, resolution, img_features, inputs, poses):
         half_resolution = (resolution - 1) / 2
         camera_c_offset = np.array(self.camera_c) - half_resolution
         # map to [-1, 1]
@@ -76,40 +77,121 @@ class GProjection(nn.Module):
         positions = inputs + torch.tensor(
             self.mesh_pos, device=inputs.device, dtype=torch.float
         )
-        w = (
-            -self.camera_f[0]
-            * (positions[:, :, 0] / self.bound_val(positions[:, :, 2]))
-            + camera_c_offset[0]
+        point_origin = batch_camera_trans_inv(poses[:, 0], positions)
+
+        view_number = poses.size(1)
+
+        h_list = []
+        w_list = []
+
+        outputs = []
+        for i in range(view_number):
+            positions = batch_camera_trans(poses[:, i], point_origin)
+            X = positions[:, :, 0]
+            Y = positions[:, :, 1]
+            Z = positions[:, :, 2]
+
+            w = -self.camera_f[0] * (X / self.bound_val(Z)) + camera_c_offset[0]
+            h = self.camera_f[1] * (Y / self.bound_val(Z)) + camera_c_offset[1]
+            if self.tensorflow_compatible:
+                # to align with tensorflow
+                # this is incorrect, I believe
+                w += half_resolution[0]
+                h += half_resolution[1]
+
+            else:
+                # directly do clamping
+                w /= half_resolution[0]
+                h /= half_resolution[1]
+
+                # clamp to [-1, 1]
+                w = torch.clamp(w, min=-1, max=1)
+                h = torch.clamp(h, min=-1, max=1)
+
+            feats = []
+            for img_feature in img_features[i]:
+                feats.append(
+                    self.project(resolution, img_feature, torch.stack([w, h], dim=-1))
+                )
+
+            output = torch.cat(feats, 2)
+            outputs.append(output)
+
+            h_list.append(h)
+            w_list.append(w)
+
+        h_view = torch.stack(h_list, dim=1)
+        w_view = torch.stack(w_list, dim=1)
+        outputs = torch.stack(outputs, dim=1)
+
+        output_max = torch.max(outputs, dim=1)[0]
+        output_mean = torch.mean(outputs, dim=1)
+        output_std = torch.std(outputs, dim=1)
+
+        return torch.concat([inputs, output_max, output_mean, output_std], dim=2)
+
+        return w_view, h_view, outputs, output_max, output_mean, output_std
+
+    def forward(self, resolution, img_features, inputs, poses):
+        half_resolution = (resolution - 1) / 2
+        camera_c_offset = np.array(self.camera_c) - half_resolution
+        # map to [-1, 1]
+        # not sure why they render to negative x
+        positions = inputs + torch.tensor(
+            self.mesh_pos, device=inputs.device, dtype=torch.float
         )
-        h = (
-            self.camera_f[1] * (positions[:, :, 1] / self.bound_val(positions[:, :, 2]))
-            + camera_c_offset[1]
-        )
+        point_origin = batch_camera_trans_inv(poses[:, 0], positions)
 
-        if self.tensorflow_compatible:
-            # to align with tensorflow
-            # this is incorrect, I believe
-            w += half_resolution[0]
-            h += half_resolution[1]
+        view_number = poses.size(1)
 
-        else:
-            # directly do clamping
-            w /= half_resolution[0]
-            h /= half_resolution[1]
+        h_list = []
+        w_list = []
 
-            # clamp to [-1, 1]
-            w = torch.clamp(w, min=-1, max=1)
-            h = torch.clamp(h, min=-1, max=1)
+        outputs = []
+        for i in range(view_number):
+            positions = batch_camera_trans(poses[:, i], point_origin)
+            X = positions[:, :, 0]
+            Y = positions[:, :, 1]
+            Z = positions[:, :, 2]
 
-        feats = [inputs]
-        for img_feature in img_features:
-            feats.append(
-                self.project(resolution, img_feature, torch.stack([w, h], dim=-1))
-            )
+            w = -self.camera_f[0] * (X / self.bound_val(Z)) + camera_c_offset[0]
+            h = self.camera_f[1] * (Y / self.bound_val(Z)) + camera_c_offset[1]
+            if self.tensorflow_compatible:
+                # to align with tensorflow
+                # this is incorrect, I believe
+                w += half_resolution[0]
+                h += half_resolution[1]
 
-        output = torch.cat(feats, 2)
+            else:
+                # directly do clamping
+                w /= half_resolution[0]
+                h /= half_resolution[1]
 
-        return output
+                # clamp to [-1, 1]
+                w = torch.clamp(w, min=-1, max=1)
+                h = torch.clamp(h, min=-1, max=1)
+
+            feats = []
+            for img_feature in img_features[i]:
+                feats.append(
+                    self.project(resolution, img_feature, torch.stack([w, h], dim=-1))
+                )
+
+            output = torch.cat(feats, 2)
+            outputs.append(output)
+
+            h_list.append(h)
+            w_list.append(w)
+
+        h_view = torch.stack(h_list, dim=1)
+        w_view = torch.stack(w_list, dim=1)
+        outputs = torch.stack(outputs, dim=1)
+
+        output_max = torch.max(outputs, dim=1)[0]
+        output_mean = torch.mean(outputs, dim=1)
+        output_std = torch.std(outputs, dim=1)
+
+        return torch.concat([inputs, output_max, output_mean, output_std], dim=2)
 
     def project(self, img_shape, img_feat, sample_points):
         """

@@ -65,4 +65,4 @@ class Ellipsoid(object):
             face_file = os.path.join(ellipsoid_dir, "face%d.obj" % i)
             faces = np.loadtxt(face_file, dtype="|S32")
             self.obj_fmt_faces.append(faces)
-            self.faces.append(torch.tensor(faces[:, 1:].astype(np.int) - 1))
+            self.faces.append(torch.tensor(faces[:, 1:].astype(np.int32) - 1))

@@ -4,42 +4,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mesh import get_base_mesh
-from models.backbones import get_backbone
-from models.layers.gbottleneck import GBottleneck
-from models.layers.gconv import GConv
-from models.layers.gpooling import GUnpooling
-from models.layers.gprojection import GProjection
-
-
-@dataclass
-class LossConfig:
-    normal_weights: float = 1.0
-    edge_weights: float = 1.0
-    laplace_weights: float = 1.0
-    move_weights: float = 1.0
-    constant_weights: float = 1.0
-    chamfer_weights: Tuple[float, float, float] = [1.0, 1.0, 1.0]
-    chamfer_opposite_weights: float = 1.0
-    reconst_weights: float = 1.0
-
-
-@dataclass
-class OptimConfig:
-    name: str = "adam"
-    adam_beta1: float = 0.9
-    adam_beta2: float = 0.999
-    sgd_momentum: float = 0.9
-    lr: float = 5e-5
-    weight_decay: float = 1e-6
-    lr_step: List[int] = [30, 45]
-    lr_factor: float = 0.1
-
-
-@dataclass
-class BaseMeshConfig:
-    name: str = "ellipsoid"
-    mesh_pose: Tuple[float, float, float] = [0.0, 0.0, 0.0]
+from .mesh import get_base_mesh
+from .backbones import get_backbone
+from .layers.gbottleneck import GBottleneck
+from .layers.gconv import GConv
+from .layers.gpooling import GUnpooling
+from .layers.gprojection import GProjection
+from ..configs import BaseMeshConfig
 
 
 class P2MModel(nn.Module):
@@ -55,7 +26,6 @@ class P2MModel(nn.Module):
         z_threshold: float,
         camera_f: Tuple[float, float],
         camera_c: Tuple[float, float],
-        mesh_pos,
     ):
         super(P2MModel, self).__init__()
 
@@ -68,7 +38,9 @@ class P2MModel(nn.Module):
         self.gconv_activation = gconv_activation
 
         self.nn_encoder, self.nn_decoder = get_backbone(backbone, align_with_tensorflow)
-        self.features_dim = self.nn_encoder.features_dim + self.coord_dim
+        self.features_dim = (
+            self.nn_encoder.features_dim * 3
+        ) + self.coord_dim  # x 3 because of max, mean and std
 
         self.gcns = nn.ModuleList(
             [
@@ -108,7 +80,7 @@ class P2MModel(nn.Module):
         # else:
         #     self.projection = GProjection
         self.projection = GProjection(
-            mesh_pos,
+            base_mesh_config.mesh_pose,
             camera_f,
             camera_c,
             bound=z_threshold,
@@ -121,21 +93,21 @@ class P2MModel(nn.Module):
             adj_mat=basemesh.adj_mat[2],
         )
 
-    def forward(self, img):
+    def forward(self, img, poses):
         batch_size = img.size(0)
-        img_feats = self.nn_encoder(img)
+        img_feats = [self.nn_encoder(img[:, i]) for i in range(img.shape[1])]
         img_shape = self.projection.image_feature_shape(img)
 
         init_pts = self.init_pts.data.unsqueeze(0).expand(batch_size, -1, -1)
         # GCN Block 1
-        x = self.projection(img_shape, img_feats, init_pts)
+        x = self.projection(img_shape, img_feats, init_pts, poses)
         x1, x_hidden = self.gcns[0](x)
 
         # before deformation 2
         x1_up = self.unpooling[0](x1)
 
         # GCN Block 2
-        x = self.projection(img_shape, img_feats, x1)
+        x = self.projection(img_shape, img_feats, x1, poses)
         x = self.unpooling[0](torch.cat([x, x_hidden], 2))
         # after deformation 2
         x2, x_hidden = self.gcns[1](x)
@@ -144,7 +116,7 @@ class P2MModel(nn.Module):
         x2_up = self.unpooling[1](x2)
 
         # GCN Block 3
-        x = self.projection(img_shape, img_feats, x2)
+        x = self.projection(img_shape, img_feats, x2, poses)
         x = self.unpooling[1](torch.cat([x, x_hidden], 2))
         x3, _ = self.gcns[2](x)
         if self.gconv_activation:
@@ -153,7 +125,8 @@ class P2MModel(nn.Module):
         x3 = self.gconv(x3)
 
         if self.nn_decoder is not None:
-            reconst = self.nn_decoder(img_feats)
+            reconst = [self.nn_decoder(img_feat) for img_feat in img_feats]
+            reconst = torch.stack(reconst, dim=1)
         else:
             reconst = None
 

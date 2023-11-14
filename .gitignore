@@ -195,3 +195,4 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,python
 external/neural_renderer/*
 models/pretrained/*
+lightning_logs/*

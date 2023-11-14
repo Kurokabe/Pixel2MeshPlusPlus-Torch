@@ -1,6 +1,6 @@
 from typing import Literal
-from models.backbones.resnet import resnet50
-from models.backbones.vgg16 import VGG16TensorflowAlign, VGG16P2M, VGG16Recons
+from .resnet import resnet50
+from .vgg16 import VGG16TensorflowAlign, VGG16P2M, VGG16Recons
 
 
 def get_backbone(backbone: Literal["vgg16", "resnet"], align_with_tensorflow: bool):

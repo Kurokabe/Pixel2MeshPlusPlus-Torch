@@ -1,14 +1,30 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from ..mesh.ellipsoid import Ellipsoid
 
-from models.layers.chamfer_wrapper import ChamferDist
+from typing import Tuple
+from p2mpp.models.layers.chamfer_wrapper import ChamferDist
+from p2mpp.configs import LossConfig
 
 
 class P2MLoss(nn.Module):
-    def __init__(self, options, ellipsoid):
+    def __init__(
+        self,
+        loss_config: LossConfig,
+        ellipsoid: Ellipsoid = None,
+    ):
         super().__init__()
-        self.options = options
+
+        self.normal_weights = loss_config.normal_weights
+        self.edge_weights = loss_config.edge_weights
+        self.laplace_weights = loss_config.laplace_weights
+        self.move_weights = loss_config.move_weights
+        self.constant_weights = loss_config.constant_weights
+        self.chamfer_weights = loss_config.chamfer_weights
+        self.chamfer_opposite_weights = loss_config.chamfer_opposite_weights
+        self.reconst_weights = loss_config.reconst_weights
+
         self.l1_loss = nn.L1Loss(reduction="mean")
         self.l2_loss = nn.MSELoss(reduction="mean")
         self.chamfer_dist = ChamferDist()
@@ -108,14 +124,13 @@ class P2MLoss(nn.Module):
             outputs["pred_coord_before_deform"],
         )
         image_loss = 0.0
-        if outputs["reconst"] is not None and self.options.weights.reconst != 0:
+        if outputs["reconst"] is not None and self.reconst_weights != 0:
             image_loss = self.image_loss(gt_images, outputs["reconst"])
 
         for i in range(3):
             dist1, dist2, idx1, idx2 = self.chamfer_dist(gt_coord, pred_coord[i])
-            chamfer_loss += self.options.weights.chamfer[i] * (
-                torch.mean(dist1)
-                + self.options.weights.chamfer_opposite * torch.mean(dist2)
+            chamfer_loss += self.chamfer_weights[i] * (
+                torch.mean(dist1) + self.chamfer_opposite_weights * torch.mean(dist2)
             )
             normal_loss += self.normal_loss(
                 gt_normal, idx2, pred_coord[i], self.edges[i]
@@ -129,14 +144,14 @@ class P2MLoss(nn.Module):
 
         loss = (
             chamfer_loss
-            + image_loss * self.options.weights.reconst
-            + self.options.weights.laplace * lap_loss
-            + self.options.weights.move * move_loss
-            + self.options.weights.edge * edge_loss
-            + self.options.weights.normal * normal_loss
+            + image_loss * self.reconst_weights
+            + self.laplace_weights * lap_loss
+            + self.move_weights * move_loss
+            + self.edge_weights * edge_loss
+            + self.normal_weights * normal_loss
         )
 
-        loss = loss * self.options.weights.constant
+        loss = loss * self.constant_weights
 
         return loss, {
             "loss": loss,

@@ -1,5 +1,5 @@
 from typing import List
-from ellipsoid import Ellipsoid
+from .ellipsoid import Ellipsoid
 
 
 def get_base_mesh(mesh: str, mesh_pos: List[float]):
