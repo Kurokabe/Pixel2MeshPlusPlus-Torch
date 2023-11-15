@@ -14,8 +14,9 @@ class DataModule(pl.LightningDataModule):
         test_file_list,
         data_root,
         image_root,
-        batch_size,
-        num_workers,
+        batch_size: int,
+        num_workers: int,
+        num_points: int,
     ):
         super().__init__()
         self.train_file_list = train_file_list
@@ -24,6 +25,7 @@ class DataModule(pl.LightningDataModule):
         self.image_root = image_root
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.num_points = num_points
 
         # TODO clean data_root
         self.train_dataset = ShapeNet(train_file_list, data_root + "/train", image_root)
@@ -53,14 +55,14 @@ class DataModule(pl.LightningDataModule):
 
     def shapenet_collate(self, batch):
         if len(batch) > 1:
-            num_points = max(b["points"].shape[0] for b in batch)
+            # num_points = max(b["points"].shape[0] for b in batch)
 
             points_orig, normals_orig = [], []
 
             for t in batch:
                 pts, normal = t["points"], t["normals"]
                 length = pts.shape[0]
-                choices = np.resize(np.random.permutation(length), num_points)
+                choices = np.resize(np.random.permutation(length), self.num_points)
                 t["points"], t["normals"] = pts[choices], normal[choices]
                 points_orig.append(torch.from_numpy(pts))
                 normals_orig.append(torch.from_numpy(normal))
