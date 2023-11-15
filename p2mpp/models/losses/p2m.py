@@ -155,6 +155,7 @@ class P2MLoss(nn.Module):
 
         return loss, {
             "loss": loss,
+            "image_loss": image_loss,
             "loss_chamfer": chamfer_loss,
             "loss_edge": edge_loss,
             "loss_laplace": lap_loss,

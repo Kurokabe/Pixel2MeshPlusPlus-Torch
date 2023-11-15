@@ -5,16 +5,16 @@ trainer:
   accumulate_grad_batches: 1
   accelerator: gpu
   precision: 32
-  gradient_clip_val: 1.0
-  # limit_train_batches: 1000
-  # limit_val_batches: 100
+  # gradient_clip_val: 1.0
+  limit_train_batches: 50
+  limit_val_batches: 25
   # strategy: deepspeed_stage_3
   # strategy: ddp_sharded
-  max_epochs: 50
+  max_epochs: 100
 model:
   network_config:
-    hidden_dim: 192
-    last_hidden_dim: 192
+    hidden_dim: 256
+    last_hidden_dim: 128
     coord_dim: 3
     backbone: "vgg16"
     gconv_activation: True
@@ -22,25 +22,25 @@ model:
     # if z is greater than 0, it will never be less than z;
     # if z is less than 0, it will never be greater than z.
     z_threshold: 0
-    align_with_tensorflow: False
+    align_with_tensorflow: True
     camera_f:
-      - 248.0
-      - 248.0
+      - 250.0
+      - 250.0
     camera_c:
-      - 111.5
-      - 111.5
+      - 112
+      - 112
   loss_config:
-    normal_weights: 1.0
-    edge_weights: 1.0
-    laplace_weights: 1.0
-    move_weights: 1.0
+    normal_weights: 0.00016
+    edge_weights: 0.1
+    laplace_weights: 0.5
+    move_weights: 0.033
     constant_weights: 1.0
     chamfer_weights:
       - 1.0
       - 1.0
       - 1.0
-    chamfer_opposite_weights: 1.0
-    reconst_weights: 1.0
+    chamfer_opposite_weights: 0.55
+    reconst_weights: 0.1
   optim_config:
     name: "adam"
     adam_beta1: 0.9
@@ -57,5 +57,5 @@ data:
   test_file_list: C:\ORamaVR\Python\Pixel2MeshPlusPlusTorch\data\test_list.txt
   data_root: C:\ORamaVR\Datasets\p2mppdata\p2mppdata
   image_root: C:\ORamaVR\Datasets\ShapeNetRendering
-  batch_size: 32
+  batch_size: 16
   num_workers: 0

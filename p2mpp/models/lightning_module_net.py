@@ -5,6 +5,7 @@ from p2mpp.configs import NetworkConfig, LossConfig, OptimConfig
 from p2mpp.models.p2m import P2MModel
 from p2mpp.models.losses.p2m import P2MLoss
 from p2mpp.models.mesh.ellipsoid import Ellipsoid
+from p2mpp.utils.vis.renderer import MeshRenderer
 
 
 class LightningModuleNet(pl.LightningModule):
@@ -38,6 +39,19 @@ class LightningModuleNet(pl.LightningModule):
             weight_decay=optim_config.weight_decay,
         )
 
+        self.renderer = MeshRenderer(
+            camera_f=network_config.camera_f,
+            camera_c=network_config.camera_c,
+            mesh_pos=network_config.base_mesh_config.mesh_pose,
+        )
+
+        self.train_sample_outputs = []
+        self.validation_sample_outputs = []
+        self.num_samples_to_visualize = 16
+
+    def on_train_epoch_start(self):
+        self.train_sample_outputs = []
+
     def training_step(self, batch, batch_idx):
         images = batch["images"]
         poses = batch["poses"]
@@ -52,7 +66,30 @@ class LightningModuleNet(pl.LightningModule):
             loss_summary, on_step=True, on_epoch=True, prog_bar=True, logger=True
         )
 
+        if len(self.train_sample_outputs) < self.num_samples_to_visualize:
+            self.train_sample_outputs.append((batch, pred))
+
         return loss
+
+    def on_train_epoch_end(self):
+        input_batch, pred = self.train_sample_outputs[0]
+        render_mesh = self.renderer.p2m_batch_visualize(
+            input_batch, pred, self.ellipsoid.faces
+        )
+        self.logger.experiment.add_image(
+            "train/render_mesh", render_mesh, self.current_epoch
+        )
+
+        output_reconst = self.renderer.visualize_reconstruction_images(
+            input_images=input_batch["images"].cpu(),
+            reconstructed_images=pred["reconst"].detach().cpu(),
+        )
+        self.logger.experiment.add_image(
+            "train/output_reconst", output_reconst, self.current_epoch
+        )
+
+    def on_validation_epoch_start(self):
+        self.validation_sample_outputs = []
 
     def validation_step(self, batch, batch_idx):
         images = batch["images"]
@@ -68,7 +105,27 @@ class LightningModuleNet(pl.LightningModule):
             loss_summary, on_step=True, on_epoch=True, prog_bar=True, logger=True
         )
 
+        if len(self.validation_sample_outputs) < self.num_samples_to_visualize:
+            self.validation_sample_outputs.append((batch, pred))
+
         return loss
+
+    def on_validation_epoch_end(self):
+        input_batch, pred = self.validation_sample_outputs[0]
+        render_mesh = self.renderer.p2m_batch_visualize(
+            input_batch, pred, self.ellipsoid.faces
+        )
+        self.logger.experiment.add_image(
+            "val/render_mesh", render_mesh, self.current_epoch
+        )
+
+        output_reconst = self.renderer.visualize_reconstruction_images(
+            input_images=input_batch["images"].cpu(),
+            reconstructed_images=pred["reconst"].detach().cpu(),
+        )
+        self.logger.experiment.add_image(
+            "val/output_reconst", output_reconst, self.current_epoch
+        )
 
     def configure_optimizers(self):
         return self.optimizer
