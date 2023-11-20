@@ -95,7 +95,9 @@ class P2MLoss(nn.Module):
         return torch.mean(cosine)
 
     def image_loss(self, gt_img, pred_img):
+        # binary_cross_entropy replaced to binary_cross_entropy_with_logits according to https://stackoverflow.com/questions/72536002/runtimeerror-torch-nn-functional-binary-cross-entropy-and-torch-nn-bceloss-are
         rect_loss = F.binary_cross_entropy(pred_img, gt_img)
+        # rect_loss = F.binary_cross_entropy_with_logits(pred_img, gt_img)
         return rect_loss
 
     def forward(self, outputs, targets):

@@ -1,40 +1,36 @@
-import numpy as np
-import cv2
 import os
 import pickle
+import random
+from glob import glob
+
+import cv2
+import numpy as np
 from torch.utils.data.dataset import Dataset
 
 
 class ShapeNet(Dataset):
-    def __init__(self, file_list, data_root, image_root):
-        self.file_list = file_list
+    def __init__(self, file_list_df, data_root):
+        self.file_list_df = file_list_df
         self.data_root = data_root
-        self.image_root = image_root
-
-        self.pkl_list = []
-        with open(file_list, "r") as f:
-            while True:
-                line = f.readline().strip()
-                if not line:
-                    break
-                self.pkl_list.append(line)
 
     def __len__(self):
-        return len(self.pkl_list)
+        return len(self.file_list_df)
 
     def __getitem__(self, idx):
-        pkl_item = self.pkl_list[idx]
-        pkl_path = os.path.join(self.data_root, pkl_item)
+        current_item = self.file_list_df.iloc[idx]
+        object_name = current_item["object_name"]
+        dataset_type = current_item["dataset_type"]
+
+        pkl_path = os.path.join(
+            self.data_root, dataset_type, "data", f"{object_name}.dat"
+        )
         pkl = pickle.load(open(pkl_path, "rb"), encoding="bytes")
 
         label = pkl
 
         # load image file
-        img_root = self.image_root
-        ids = pkl_item.split("_")
-        category = ids[-3]
-        item_id = ids[-2]
-        img_path = os.path.join(img_root, category, item_id, "rendering")
+        img_root = os.path.join(self.data_root, dataset_type, "rendering")
+        img_path = os.path.join(img_root, object_name)
         camera_meta_data = np.loadtxt(os.path.join(img_path, "rendering_metadata.txt"))
         # if self.mesh_root is not None:
         #     mesh = np.loadtxt(
@@ -47,9 +43,16 @@ class ShapeNet(Dataset):
 
         imgs = np.zeros((3, 224, 224, 3))
         poses = np.zeros((3, 5))
-        for idx, view in enumerate([0, 6, 7]):
+
+        image_files = glob(os.path.join(img_path, "*.png"))
+        selected_image_files = random.sample(image_files, 3)
+
+        for idx, file_name in enumerate(
+            selected_image_files
+        ):  # TODO take 3 random images
+            view = int(os.path.splitext(os.path.basename(file_name))[0])
             img = cv2.imread(
-                os.path.join(img_path, str(view).zfill(2) + ".png"),
+                file_name,
                 cv2.IMREAD_UNCHANGED,
             )
             img[np.where(img[:, :, 3] == 0)] = 255
@@ -70,6 +73,5 @@ class ShapeNet(Dataset):
             "points": points.astype(np.float32),
             "normals": normals.astype(np.float32),
             "poses": poses.astype(np.float32),
-            "filename": pkl_item,
+            "filename": object_name,
         }
-        return imgs, label, poses, pkl_item, mesh

@@ -4,13 +4,14 @@ trainer:
   - 0
   accumulate_grad_batches: 1
   accelerator: gpu
+  # precision: 16-mixed
   precision: 32
   # gradient_clip_val: 1.0
   limit_train_batches: 50
   limit_val_batches: 25
   # strategy: deepspeed_stage_3
   # strategy: ddp_sharded
-  max_epochs: 100
+  max_epochs: 5000
 model:
   network_config:
     hidden_dim: 256
@@ -53,10 +54,10 @@ model:
       - 45
     lr_factor: 0.1
 data:
-  train_file_list: C:\ORamaVR\Python\Pixel2MeshPlusPlusTorch\data\train_list.txt
-  test_file_list: C:\ORamaVR\Python\Pixel2MeshPlusPlusTorch\data\test_list.txt
-  data_root: C:\ORamaVR\Datasets\p2mppdata\p2mppdata
-  image_root: C:\ORamaVR\Datasets\ShapeNetRendering
+  data_list: .\data\dataset.csv
+  data_root: D:\ORamaVR\Datasets\P2MPP
   batch_size: 16
+  test_size: 0.2
+  seed: 42
   num_workers: 0
   num_points: 9000

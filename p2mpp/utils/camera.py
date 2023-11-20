@@ -102,7 +102,7 @@ def draw_image_from_points_projection(h, w):
 
     # iterate over each h and w coordinate and draw a red dot
     for i in range(len(h)):
-        draw.ellipse((w[i] - 1, h[i] - 1, w[i] + 1, h[i] + 1), fill="red")
+        draw.ellipse((w[i] - 0.1, h[i] - 0.1, w[i] + 0.1, h[i] + 0.1), fill="red")
 
     # display the image
     img.show()

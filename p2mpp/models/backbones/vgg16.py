@@ -185,4 +185,6 @@ class VGG16Recons(nn.Module):
         x = F.relu(self.conv_4(x))
         x = F.relu(self.conv_5(x))
 
+        # Sigmoid removed to use BCEWithLogitsLoss according to https://stackoverflow.com/questions/72536002/runtimeerror-torch-nn-functional-binary-cross-entropy-and-torch-nn-bceloss-are
+        # return torch.sigmoid(x)
         return torch.sigmoid(x)

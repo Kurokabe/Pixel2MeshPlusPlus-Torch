@@ -196,3 +196,5 @@ pyrightconfig.json
 external/neural_renderer/*
 models/pretrained/*
 lightning_logs/*
+config.json
+checkpoints/*

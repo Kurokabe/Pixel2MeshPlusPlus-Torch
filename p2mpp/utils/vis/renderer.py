@@ -92,36 +92,73 @@ class MeshRenderer(object):
 
         return rgb, alpha
 
-    def _render_pointcloud(
-        self,
-        vertices: np.ndarray,
-        width,
-        height,
-        camera_k,
-        camera_dist_coeffs,
-        rvec,
-        tvec,
-        color=None,
-    ):
+    # def _render_pointcloud(
+    #     self,
+    #     vertices: np.ndarray,
+    #     width,
+    #     height,
+    #     camera_k,
+    #     camera_dist_coeffs,
+    #     rvec,
+    #     tvec,
+    #     color=None,
+    # ):
+    #     if color is None:
+    #         color = "pink"
+    #     color = self.colors[color]
+
+    #     # return pointcloud
+    #     vertices_2d = cv2.projectPoints(
+    #         np.expand_dims(vertices, -1), rvec, tvec, camera_k, camera_dist_coeffs
+    #     )[0]
+    #     vertices_2d = np.reshape(vertices_2d, (-1, 2))
+    #     alpha = np.zeros((height, width, 3), np.float32)
+    #     whiteboard = np.ones((3, height, width), np.float32)
+    #     if np.isnan(vertices_2d).any():
+    #         return whiteboard, alpha
+    #     for x, y in vertices_2d:
+    #         cv2.circle(
+    #             alpha, (int(x), int(y)), radius=1, color=(1.0, 1.0, 1.0), thickness=-1
+    #         )
+    #     rgb = _process_render_result(alpha * color[None, None, :], height, width)
+    #     alpha = _process_render_result(alpha[:, :, 0], height, width)
+    #     rgb = _mix_render_result_with_image(rgb, alpha[0], whiteboard)
+    #     return rgb, alpha
+
+    def _render_pointcloud(self, vertices, width, height, camera_metadata, color=None):
+        import p2mpp.utils.camera as camera
+
         if color is None:
             color = "pink"
         color = self.colors[color]
 
-        # return pointcloud
-        vertices_2d = cv2.projectPoints(
-            np.expand_dims(vertices, -1), rvec, tvec, camera_k, camera_dist_coeffs
-        )[0]
-        vertices_2d = np.reshape(vertices_2d, (-1, 2))
+        vertices = torch.tensor(vertices, dtype=torch.float32)
+
+        positions = camera.camera_trans(camera_metadata, vertices)
+        half_resolution = np.array([width, height]) / 2
+        camera_c_offset = np.array(self.camera_c) - half_resolution
+
+        X = positions[:, 0]
+        Y = positions[:, 1]
+        Z = positions[:, 2]
+
+        w = -self.camera_f[0] * (X / Z) + camera_c_offset[0]
+        h = self.camera_f[1] * (Y / Z) + camera_c_offset[1]
+        w += half_resolution[0]
+        h += half_resolution[1]
+
         alpha = np.zeros((height, width, 3), np.float32)
         whiteboard = np.ones((3, height, width), np.float32)
-        if np.isnan(vertices_2d).any():
-            return whiteboard, alpha
-        for x, y in vertices_2d:
+
+        for x, y in zip(w, h):
+            x = int(x)
+            y = int(y)
             cv2.circle(
                 alpha, (int(x), int(y)), radius=1, color=(1.0, 1.0, 1.0), thickness=-1
             )
-        rgb = _process_render_result(alpha * color[None, None, :], height, width)
-        alpha = _process_render_result(alpha[:, :, 0], height, width)
+
+        rgb = _process_render_result(alpha * color[None, None, :], 224, 224)
+        alpha = _process_render_result(alpha[:, :, 0], 224, 224)
         rgb = _mix_render_result_with_image(rgb, alpha[0], whiteboard)
         return rgb, alpha
 
@@ -153,25 +190,12 @@ class MeshRenderer(object):
         if mesh_only:
             return mesh
 
+        camera_metadata = torch.tensor([0.0, 0.0, 0.0, 2, 35.0])
         gt_pc, _ = self._render_pointcloud(
-            gt_coord,
-            image.shape[2],
-            image.shape[1],
-            camera_k,
-            dist_coeffs,
-            rvec,
-            tvec,
-            **kwargs
+            gt_coord, image.shape[2], image.shape[1], camera_metadata, **kwargs
         )
         pred_pc, _ = self._render_pointcloud(
-            coord,
-            image.shape[2],
-            image.shape[1],
-            camera_k,
-            dist_coeffs,
-            rvec,
-            tvec,
-            **kwargs
+            coord, image.shape[2], image.shape[1], camera_metadata, **kwargs
         )
         return np.concatenate((image, gt_pc, pred_pc, mesh), 2)
 

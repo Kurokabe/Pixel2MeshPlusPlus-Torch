@@ -1,10 +1,12 @@
-import torch
 from typing import Literal, Tuple
+
 import pytorch_lightning as pl
-from p2mpp.configs import NetworkConfig, LossConfig, OptimConfig
-from p2mpp.models.p2m import P2MModel
+import torch
+
+from p2mpp.configs import LossConfig, NetworkConfig, OptimConfig
 from p2mpp.models.losses.p2m import P2MLoss
 from p2mpp.models.mesh.ellipsoid import Ellipsoid
+from p2mpp.models.p2m import P2MModel
 from p2mpp.utils.vis.renderer import MeshRenderer
 
 
@@ -80,6 +82,13 @@ class LightningModuleNet(pl.LightningModule):
             "train/render_mesh", render_mesh, self.current_epoch
         )
 
+        self.logger.experiment.add_mesh(
+            "train/mesh_gt", input_batch["points"][:3], global_step=self.current_epoch
+        )
+        self.logger.experiment.add_mesh(
+            "train/mesh_pred", pred["pred_coord"][2][:3], global_step=self.current_epoch
+        )
+
         output_reconst = self.renderer.visualize_reconstruction_images(
             input_images=input_batch["images"].cpu(),
             reconstructed_images=pred["reconst"].detach().cpu(),
@@ -112,11 +121,18 @@ class LightningModuleNet(pl.LightningModule):
 
     def on_validation_epoch_end(self):
         input_batch, pred = self.validation_sample_outputs[0]
-        render_mesh = self.renderer.p2m_batch_visualize(
-            input_batch, pred, self.ellipsoid.faces
+        # render_mesh = self.renderer.p2m_batch_visualize(
+        #     input_batch, pred, self.ellipsoid.faces
+        # )
+        # self.logger.experiment.add_image(
+        #     "val/render_mesh", render_mesh, self.current_epoch
+        # )
+
+        self.logger.experiment.add_mesh(
+            "val/mesh_gt", input_batch["points"][:3], global_step=self.current_epoch
         )
-        self.logger.experiment.add_image(
-            "val/render_mesh", render_mesh, self.current_epoch
+        self.logger.experiment.add_mesh(
+            "val/mesh_pred", pred["pred_coord"][2][:3], global_step=self.current_epoch
         )
 
         output_reconst = self.renderer.visualize_reconstruction_images(

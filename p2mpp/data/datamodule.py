@@ -1,35 +1,44 @@
-import pytorch_lightning as pl
-from pytorch_lightning.utilities.types import EVAL_DATALOADERS
-from torch.utils.data import DataLoader
-from p2mpp.data.shapenet import ShapeNet
-import torch
 import numpy as np
+import pandas as pd
+import pytorch_lightning as pl
+import torch
+from pytorch_lightning.utilities.types import EVAL_DATALOADERS
+from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader
 from torch.utils.data.dataloader import default_collate
+
+from p2mpp.data.shapenet import ShapeNet
 
 
 class DataModule(pl.LightningDataModule):
     def __init__(
         self,
-        train_file_list,
-        test_file_list,
+        data_list,
         data_root,
-        image_root,
+        test_size: float,
+        seed: int,
         batch_size: int,
         num_workers: int,
         num_points: int,
     ):
         super().__init__()
-        self.train_file_list = train_file_list
-        self.test_file_list = test_file_list
+        self.data_list = data_list
         self.data_root = data_root
-        self.image_root = image_root
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.num_points = num_points
 
+        data_list_df = pd.read_csv(data_list)
+        # data_list_df = data_list_df[data_list_df["dataset_type"] == "ShapeNet"]
+        train_file_list_df, test_file_list_df = train_test_split(
+            data_list_df, test_size=test_size, random_state=seed
+        )
+        # train_file_list_df = data_list_df[data_list_df["dataset_type"] == "ShapeNet"]
+        # test_file_list_df = data_list_df[data_list_df["dataset_type"] == "ShapeNet"]
+
         # TODO clean data_root
-        self.train_dataset = ShapeNet(train_file_list, data_root + "/train", image_root)
-        self.test_dataset = ShapeNet(test_file_list, data_root + "/test", image_root)
+        self.train_dataset = ShapeNet(train_file_list_df, data_root)
+        self.test_dataset = ShapeNet(test_file_list_df, data_root)
 
     def train_dataloader(self):
         return DataLoader(
