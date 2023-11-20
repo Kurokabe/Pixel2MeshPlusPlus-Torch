@@ -2,3 +2,4 @@ pytorch_lightning
 scipy
 jsonargparse[signatures]
 tensorboard
+scikit-learn
