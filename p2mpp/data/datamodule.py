@@ -7,12 +7,11 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from torch.utils.data.dataloader import default_collate
 
-from p2mpp.data.p2mpp_dataset_azure import P2MPPDataset
-
 
 class DataModule(pl.LightningDataModule):
     def __init__(
         self,
+        name: str,
         data_list,
         data_root,
         test_size: float,
@@ -27,6 +26,13 @@ class DataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.num_points = num_points
+
+        if name == "p2mpp":
+            from p2mpp.data.p2mpp_dataset import P2MPPDataset
+        elif name == "p2mpp_azure":
+            from p2mpp.data.p2mpp_dataset_azure import P2MPPDataset
+        else:
+            raise ValueError(f"Unknown dataset name:  {name}")
 
         data_list_df = pd.read_csv(data_list)
         # data_list_df = data_list_df[data_list_df["dataset_type"] == "ShapeNet"]

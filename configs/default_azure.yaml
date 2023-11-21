@@ -54,6 +54,7 @@ model:
       - 45
     lr_factor: 0.1
 data:
+  name: p2mpp_azure
   data_list: ./data/dataset.csv
   data_root: LocalUpload/5ddcd6ec991c932d128cccbb188a52b3/P2MPP/
   batch_size: 16

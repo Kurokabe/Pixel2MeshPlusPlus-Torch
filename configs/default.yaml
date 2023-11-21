@@ -54,6 +54,7 @@ model:
       - 45
     lr_factor: 0.1
 data:
+  name: p2mpp
   data_list: .\data\dataset.csv
   data_root: D:\ORamaVR\Datasets\P2MPP
   batch_size: 16
