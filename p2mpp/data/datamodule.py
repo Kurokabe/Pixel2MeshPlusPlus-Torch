@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from torch.utils.data.dataloader import default_collate
 
-from p2mpp.data.shapenet import ShapeNet
+from p2mpp.data.p2mpp_dataset_azure import P2MPPDataset
 
 
 class DataModule(pl.LightningDataModule):
@@ -36,9 +36,8 @@ class DataModule(pl.LightningDataModule):
         # train_file_list_df = data_list_df[data_list_df["dataset_type"] == "ShapeNet"]
         # test_file_list_df = data_list_df[data_list_df["dataset_type"] == "ShapeNet"]
 
-        # TODO clean data_root
-        self.train_dataset = ShapeNet(train_file_list_df, data_root)
-        self.test_dataset = ShapeNet(test_file_list_df, data_root)
+        self.train_dataset = P2MPPDataset(train_file_list_df, data_root)
+        self.test_dataset = P2MPPDataset(test_file_list_df, data_root)
 
     def train_dataloader(self):
         return DataLoader(

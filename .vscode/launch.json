@@ -14,7 +14,9 @@
             "args": [
                 "fit",
                 "--config",
-                "configs/default.yaml"
+                "configs/default_azure.yaml",
+                "--ckpt_path",
+                "checkpoints/bootstrap_azure/checkpoints/epoch=347-step=17400.ckpt"
             ]
         }
     ]

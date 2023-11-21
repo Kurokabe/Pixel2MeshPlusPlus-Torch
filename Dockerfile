@@ -7,11 +7,11 @@ RUN rm -rf /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1 /usr/lib/x86_64-linux-gnu
 COPY requirements.txt .
 RUN pip install -r requirements.txt --no-cache-dir
 
-COPY external/chamfer ./external/chamfer
-COPY external/neural_renderer ./external/neural_renderer
+# COPY external/chamfer ./external/chamfer
+# COPY external/neural_renderer ./external/neural_renderer
 
-RUN cd external/chamfer && python setup.py install
-RUN cd external/neural_renderer && python setup.py install
+# RUN cd external/chamfer && python setup.py install
+# RUN cd external/neural_renderer && python setup.py install
 
 # Inference requirements
 COPY --from=mcr.microsoft.com/azureml/o16n-base/python-assets:20230419.v1 /artifacts /var/
