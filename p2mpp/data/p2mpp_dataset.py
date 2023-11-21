@@ -73,5 +73,5 @@ class P2MPPDataset(Dataset):
             "points": points.astype(np.float32),
             "normals": normals.astype(np.float32),
             "poses": poses.astype(np.float32),
-            "filename": object_name,
+            "filename": f"{dataset_type} | {object_name}",
         }

@@ -1,0 +1,7 @@
+$schema: https://azuremlschemas.azureedge.net/latest/data.schema.json
+#enter name for your data
+name: P2MPP_Data
+# invoke completions (Ctrl+Space, Cmd+Space) to see the list of types available
+type: uri_folder
+# enter local/remote path to data
+path: D:\ORamaVR\Datasets\P2MPP
