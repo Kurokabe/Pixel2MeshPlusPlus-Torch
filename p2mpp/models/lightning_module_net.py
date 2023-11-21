@@ -2,6 +2,7 @@ from typing import Literal, Tuple
 
 import pytorch_lightning as pl
 import torch
+from loguru import logger
 
 from p2mpp.configs import LossConfig, NetworkConfig, OptimConfig
 from p2mpp.models.losses.p2m import P2MLoss
@@ -30,6 +31,19 @@ class LightningModuleNet(pl.LightningModule):
             camera_f=network_config.camera_f,
             camera_c=network_config.camera_c,
         )
+        log_level = "DEBUG"
+        log_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <yellow>Line {line: >4} ({file}):</yellow> <b>{message}</b>"
+
+        logger.remove(0)
+        logger.add(
+            "file.log",
+            level=log_level,
+            format=log_format,
+            colorize=False,
+            backtrace=True,
+            diagnose=True,
+        )
+
         self.ellipsoid = Ellipsoid(network_config.base_mesh_config.mesh_pose)
 
         self.criterion = P2MLoss(loss_config=loss_config, ellipsoid=self.ellipsoid)
@@ -58,6 +72,8 @@ class LightningModuleNet(pl.LightningModule):
         images = batch["images"]
         poses = batch["poses"]
 
+        logger.info(f"Processing batch {batch['filename']}")
+
         pred = self.model(images, poses)
         loss, loss_summary = self.criterion(pred, batch)
 
@@ -83,10 +99,10 @@ class LightningModuleNet(pl.LightningModule):
         )
 
         self.logger.experiment.add_mesh(
-            "train/mesh_gt", input_batch["points"][:3], global_step=self.current_epoch
+            "train/mesh_gt", input_batch["points"][:6], global_step=self.current_epoch
         )
         self.logger.experiment.add_mesh(
-            "train/mesh_pred", pred["pred_coord"][2][:3], global_step=self.current_epoch
+            "train/mesh_pred", pred["pred_coord"][2][:6], global_step=self.current_epoch
         )
 
         output_reconst = self.renderer.visualize_reconstruction_images(
@@ -129,10 +145,10 @@ class LightningModuleNet(pl.LightningModule):
         # )
 
         self.logger.experiment.add_mesh(
-            "val/mesh_gt", input_batch["points"][:3], global_step=self.current_epoch
+            "val/mesh_gt", input_batch["points"][:6], global_step=self.current_epoch
         )
         self.logger.experiment.add_mesh(
-            "val/mesh_pred", pred["pred_coord"][2][:3], global_step=self.current_epoch
+            "val/mesh_pred", pred["pred_coord"][2][:6], global_step=self.current_epoch
         )
 
         output_reconst = self.renderer.visualize_reconstruction_images(

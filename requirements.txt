@@ -3,3 +3,7 @@ scipy
 jsonargparse[signatures]
 tensorboard
 scikit-learn
+opencv-python
+ipykernel
+chardet
+scikit-image

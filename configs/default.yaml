@@ -7,7 +7,7 @@ trainer:
   # precision: 16-mixed
   precision: 32
   # gradient_clip_val: 1.0
-  limit_train_batches: 50
+  limit_train_batches: 125
   limit_val_batches: 25
   # strategy: deepspeed_stage_3
   # strategy: ddp_sharded
