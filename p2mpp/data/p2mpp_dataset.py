@@ -47,9 +47,7 @@ class P2MPPDataset(Dataset):
         image_files = glob(os.path.join(img_path, "*.png"))
         selected_image_files = random.sample(image_files, 3)
 
-        for idx, file_name in enumerate(
-            selected_image_files
-        ):  # TODO take 3 random images
+        for idx, file_name in enumerate(selected_image_files):
             view = int(os.path.splitext(os.path.basename(file_name))[0])
             img = cv2.imread(
                 file_name,
@@ -73,5 +71,5 @@ class P2MPPDataset(Dataset):
             "points": points.astype(np.float32),
             "normals": normals.astype(np.float32),
             "poses": poses.astype(np.float32),
-            "filename": f"{dataset_type} | {object_name}",
+            "filename": f"{selected_image_files}",
         }

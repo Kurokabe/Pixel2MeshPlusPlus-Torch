@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Literal, Tuple
+from typing import List, Literal, Optional, Tuple
 
 
 @dataclass
@@ -44,3 +44,10 @@ class NetworkConfig:
     z_threshold: float = 0
     camera_f: Tuple[float, float] = (248.0, 248.0)
     camera_c: Tuple[float, float] = (111.5, 111.5)
+
+
+@dataclass
+class P2MPPConfig(NetworkConfig):
+    input_dim: int = 339  # 3 + 3 * (16 + 32 + 64)
+    nn_encoder_ckpt_path: Optional[str] = None
+    hypothesis_shape: str = "icosahedron"

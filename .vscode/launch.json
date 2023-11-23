@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Train P2MPP",
             "type": "python",
             "request": "launch",
             "program": "${file}",
@@ -14,9 +14,22 @@
             "args": [
                 "fit",
                 "--config",
-                "configs/default_azure.yaml",
+                "configs/p2mpp/default.yaml",
+            ]
+        },
+        {
+            "name": "Train P2M",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "fit",
+                "--config",
+                "configs/default.yaml",
                 "--ckpt_path",
-                "checkpoints/bootstrap_azure/checkpoints/epoch=347-step=17400.ckpt"
+                "lightning_logs\\version_4\\checkpoints\\epoch=749-step=65259.ckpt"
             ]
         }
     ]

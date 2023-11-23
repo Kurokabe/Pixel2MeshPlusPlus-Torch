@@ -1,7 +1,8 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .gconv import GConv
+from .gconv import GConv, LocalGConv
 
 
 class GResBlock(nn.Module):
@@ -53,3 +54,44 @@ class GBottleneck(nn.Module):
         x_out = self.conv2(x_hidden)
 
         return x_out, x_hidden
+
+
+class DeformationReasoning(nn.Module):
+    def __init__(self, in_dim, hidden_dim, out_dim, adj_mat, sample_coord):
+        super().__init__()
+        self.sample_coord = nn.Parameter(sample_coord, requires_grad=False)
+        self.conv1 = LocalGConv(
+            in_features=in_dim, out_features=hidden_dim, adj_mat=adj_mat
+        )
+        self.conv2 = LocalGConv(
+            in_features=hidden_dim, out_features=hidden_dim, adj_mat=adj_mat
+        )
+        self.conv3 = LocalGConv(
+            in_features=hidden_dim, out_features=hidden_dim, adj_mat=adj_mat
+        )
+        self.conv4 = LocalGConv(
+            in_features=hidden_dim, out_features=hidden_dim, adj_mat=adj_mat
+        )
+        self.conv5 = LocalGConv(
+            in_features=hidden_dim, out_features=hidden_dim, adj_mat=adj_mat
+        )
+        self.conv6 = LocalGConv(
+            in_features=hidden_dim,
+            out_features=out_dim,
+            adj_mat=adj_mat,
+            act=lambda x: x,
+        )
+
+    def forward(self, proj_features, prev_coord):
+        x1 = self.conv1(proj_features)
+        x2 = self.conv2(x1)
+        x3 = self.conv3(x2) + x1
+        x4 = self.conv4(x3)
+        x5 = self.conv5(x4) + x3
+        x6 = self.conv6(x5)
+        score = F.softmax(x6, dim=2)
+        delta_coord = torch.sum(score * self.sample_coord, dim=2)
+
+        next_coord = prev_coord + delta_coord
+
+        return next_coord  # , delta_coord, score, x6

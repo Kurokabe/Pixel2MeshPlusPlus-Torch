@@ -1,0 +1,64 @@
+seed_everything: true
+trainer:
+  devices:
+    - 0
+  accumulate_grad_batches: 1
+  accelerator: gpu
+  # precision: 16-mixed
+  precision: 32
+  # gradient_clip_val: 1.0
+  # limit_train_batches: 50
+  # limit_val_batches: 25
+  # strategy: deepspeed_stage_3
+  # strategy: ddp_sharded
+  max_epochs: 5000
+model:
+  network_config:
+    hidden_dim: 256
+    last_hidden_dim: 128
+    coord_dim: 3
+    backbone: "vgg16"
+    gconv_activation: True
+    # provide a boundary for z, so that z will never be equal to 0, on denominator
+    # if z is greater than 0, it will never be less than z;
+    # if z is less than 0, it will never be greater than z.
+    z_threshold: 0
+    align_with_tensorflow: True
+    camera_f:
+      - 250.0
+      - 250.0
+    camera_c:
+      - 112
+      - 112
+  loss_config:
+    normal_weights: 0.00016
+    edge_weights: 0.1
+    laplace_weights: 0.5
+    move_weights: 0.033
+    constant_weights: 1.0
+    chamfer_weights:
+      - 1.0
+      - 1.0
+      - 1.0
+    chamfer_opposite_weights: 0.55
+    reconst_weights: 0.1
+  optim_config:
+    name: "adam"
+    adam_beta1: 0.9
+    adam_beta2: 0.999
+    sgd_momentum: 0.9
+    lr: 5e-5
+    weight_decay: 1e-6
+    lr_step:
+      - 30
+      - 45
+    lr_factor: 0.1
+data:
+  name: p2mpp_azure
+  data_list: ./data/dataset.csv
+  data_root: LocalUpload/5ddcd6ec991c932d128cccbb188a52b3/P2MPP/
+  batch_size: 16
+  test_size: 0.2
+  seed: 42
+  num_workers: 8
+  num_points: 9000

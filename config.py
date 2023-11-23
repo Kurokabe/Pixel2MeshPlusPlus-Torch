@@ -4,6 +4,7 @@ from pathlib import Path
 MODELS_ROOT = Path(__file__).parent / "models"
 
 ELLIPSOID_PATH = MODELS_ROOT / "ellipsoid" / "info_ellipsoid.dat"
+ICOSAHEDRON_PATH = MODELS_ROOT / "icosahedron" / "iccv_p2mpp.dat"
 
 PRETRAINED_WEIGHTS_PATH = {
     "vgg16": MODELS_ROOT / "pretrained" / "vgg16-397923af.pth",

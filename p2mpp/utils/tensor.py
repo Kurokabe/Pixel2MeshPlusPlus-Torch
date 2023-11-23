@@ -22,7 +22,8 @@ def batch_mm(matrix, batch):
     """
     # TODO: accelerate this with batch operations
     # with torch.cuda.amp.autocast(enabled=False):
-    return torch.stack([matrix.mm(b) for b in batch], dim=0)
+    out = [matrix.mm(b) for b in batch]
+    return torch.stack(out, dim=0)
 
 
 def dot(x, y, sparse=False):

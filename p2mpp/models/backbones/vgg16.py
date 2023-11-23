@@ -1,3 +1,5 @@
+from typing import List
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,9 +8,12 @@ import config
 
 
 class VGG16TensorflowAlign(nn.Module):
-    def __init__(self, n_classes_input=3):
+    def __init__(
+        self, n_classes_input=3, output_features_idx: List[int] = [2, 3, 4, 5]
+    ):
         super(VGG16TensorflowAlign, self).__init__()
 
+        self.output_features_idx = output_features_idx
         self.features_dim = 960
         # this is to align with tensorflow padding (with stride)
         # https://bugxch.github.io/tf%E4%B8%AD%E7%9A%84padding%E6%96%B9%E5%BC%8FSAME%E5%92%8CVALID%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB/
@@ -43,10 +48,12 @@ class VGG16TensorflowAlign(nn.Module):
     def forward(self, img):
         img = F.relu(self.conv0_1(self.same_padding(img)))
         img = F.relu(self.conv0_2(self.same_padding(img)))
+        img0 = img
 
         img = F.relu(self.conv1_1(self.tf_padding(img)))
         img = F.relu(self.conv1_2(self.same_padding(img)))
         img = F.relu(self.conv1_3(self.same_padding(img)))
+        img1 = img
 
         img = F.relu(self.conv2_1(self.tf_padding(img)))
         img = F.relu(self.conv2_2(self.same_padding(img)))
@@ -69,7 +76,9 @@ class VGG16TensorflowAlign(nn.Module):
         img = F.relu(self.conv5_4(self.same_padding(img)))
         img5 = img
 
-        return [img2, img3, img4, img5]
+        features = [img0, img1, img2, img3, img4, img5]
+
+        return [features[i] for i in self.output_features_idx]
 
 
 class VGG16P2M(nn.Module):

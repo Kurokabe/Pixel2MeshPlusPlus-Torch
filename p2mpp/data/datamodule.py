@@ -35,15 +35,14 @@ class DataModule(pl.LightningDataModule):
             raise ValueError(f"Unknown dataset name:  {name}")
 
         data_list_df = pd.read_csv(data_list)
-        # data_list_df = data_list_df[data_list_df["dataset_type"] == "ShapeNet"]
         train_file_list_df, test_file_list_df = train_test_split(
             data_list_df, test_size=test_size, random_state=seed
         )
-        # train_file_list_df = data_list_df[data_list_df["dataset_type"] == "ShapeNet"]
-        # test_file_list_df = data_list_df[data_list_df["dataset_type"] == "ShapeNet"]
 
         self.train_dataset = P2MPPDataset(train_file_list_df, data_root)
         self.test_dataset = P2MPPDataset(test_file_list_df, data_root)
+
+        # self.train_dataset = P2MPPDataset(data_list_df, data_root)
 
     def train_dataloader(self):
         return DataLoader(

@@ -198,3 +198,4 @@ models/pretrained/*
 lightning_logs/*
 config.json
 checkpoints/*
+saved_logs/*

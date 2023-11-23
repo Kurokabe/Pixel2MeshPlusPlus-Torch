@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Threshold
+
 from p2mpp.utils.camera import batch_camera_trans, batch_camera_trans_inv
 
 
@@ -48,6 +49,13 @@ class GProjection(nn.Module):
         # keep it here to align with tensorflow version
         x1, x2 = torch.floor(x).long(), torch.ceil(x).long()
         y1, y2 = torch.floor(y).long(), torch.ceil(y).long()
+
+        max_x_shape = img_feat.shape[1] - 1
+        max_y_shape = img_feat.shape[2] - 1
+        x1 = torch.clamp(x1, min=0, max=max_x_shape)
+        x2 = torch.clamp(x2, min=0, max=max_x_shape)
+        y1 = torch.clamp(y1, min=0, max=max_y_shape)
+        y2 = torch.clamp(y2, min=0, max=max_y_shape)
 
         Q11 = img_feat[:, x1, y1].clone()
         Q12 = img_feat[:, x1, y2].clone()

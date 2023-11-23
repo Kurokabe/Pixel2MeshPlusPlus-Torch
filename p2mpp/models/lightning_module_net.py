@@ -19,6 +19,7 @@ class LightningModuleNet(pl.LightningModule):
         optim_config: OptimConfig,
     ):
         super().__init__()
+        self.save_hyperparameters()
         self.model = P2MModel(
             hidden_dim=network_config.hidden_dim,
             coord_dim=network_config.coord_dim,
