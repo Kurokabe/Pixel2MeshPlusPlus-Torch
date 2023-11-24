@@ -35,7 +35,7 @@ class P2MPPModel(nn.Module):
         if nn_encoder_ckpt_path is not None:
             self.restore_nn_encoder(nn_encoder_ckpt_path)
 
-        hypothesis_vertices = 4 * torch.Tensor(
+        hypothesis_vertices = 2 * torch.Tensor(
             self.hypothesis_shape.hypothesis_vertices
         ).cuda()  # TODO change cuda to device
         adj_mat = torch.Tensor(
