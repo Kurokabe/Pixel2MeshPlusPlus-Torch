@@ -51,3 +51,4 @@ class P2MPPConfig(NetworkConfig):
     input_dim: int = 339  # 3 + 3 * (16 + 32 + 64)
     nn_encoder_ckpt_path: Optional[str] = None
     hypothesis_shape: str = "icosahedron"
+    num_iterations: int=1

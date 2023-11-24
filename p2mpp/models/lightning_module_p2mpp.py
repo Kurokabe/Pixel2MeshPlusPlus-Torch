@@ -39,6 +39,7 @@ class LightningModuleP2MPP(pl.LightningModule):
             camera_f=p2m_config.camera_f,
             camera_c=p2m_config.camera_c,
         )
+        self.p2m_model.eval()
 
         self.restore_p2m_ckpt(p2m_ckpt_path)
 
@@ -53,7 +54,7 @@ class LightningModuleP2MPP(pl.LightningModule):
             hypothesis_shape=hypothesis_shape,
             nn_encoder_ckpt_path=p2m_ckpt_path,
         )
-        self.p2mpp_model.eval()
+        self.num_iterations = p2mpp_config.num_iterations
 
         basemesh_config = p2mpp_config.base_mesh_config
         ellipsoid = Ellipsoid(basemesh_config.mesh_pose)
@@ -79,12 +80,12 @@ class LightningModuleP2MPP(pl.LightningModule):
 
     def forward(self, images, poses):
         with torch.no_grad():
-            coarse_pred = self.p2m_model(images, poses)
+            coarse_pred = self.p2m_model(images.detach().clone(), poses)
 
         coarse_vertices = coarse_pred["pred_coord"][2]
         input_vertices = coarse_vertices
-        for i in range(20):
-            fine_pred = self.p2mpp_model(input_vertices, images, poses)
+        for i in range(self.num_iterations):
+            fine_pred = self.p2mpp_model(input_vertices, images.clone(), poses)
             input_vertices = fine_pred["pred_coord"]
 
         # fine_pred = self.p2mpp_model(coarse_vertices, images, poses)
