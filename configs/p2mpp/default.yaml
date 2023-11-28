@@ -42,6 +42,8 @@ model:
       - 112
       - 112
     backbone: "vgg16"
+    z_threshold: -0.05
+    num_iterations: 2
   p2mpp_loss_config:
     normal_weights: 1.6e-4
     edge_weights: 0.1

@@ -21,7 +21,7 @@ class GProjection(nn.Module):
         super(GProjection, self).__init__()
         self.mesh_pos, self.camera_f, self.camera_c = mesh_pos, camera_f, camera_c
         self.threshold = None
-        self.bound = 0
+        self.bound = bound
         self.tensorflow_compatible = tensorflow_compatible
         if self.bound != 0:
             self.threshold = Threshold(bound, bound)
