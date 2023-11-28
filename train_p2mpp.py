@@ -13,7 +13,9 @@ def cli_main():
         trainer_defaults={
             "logger": lazy_instance(
                 TensorBoardLogger, save_dir="./lightning_logs", name="p2mpp"
-            )
+            ),
+            # "detect_anomaly": True,
+            "overfit_batches":10
         },
         # trainer_defaults={"callbacks": [checkpoint_callback]},
     )

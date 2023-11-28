@@ -42,7 +42,8 @@ model:
       - 112
       - 112
     backbone: "vgg16"
-    num_iterations: 1
+    z_threshold: -0.05
+    num_iterations: 25
   p2mpp_loss_config:
     normal_weights: 1.6e-4
     edge_weights: 0.1
@@ -60,7 +61,7 @@ model:
     adam_beta1: 0.9
     adam_beta2: 0.999
     sgd_momentum: 0.9
-    lr: 1e-5
+    lr: 1e-4
     weight_decay: 1e-6
     lr_step:
       - 30
@@ -68,10 +69,10 @@ model:
     lr_factor: 0.1
 data:
   name: p2mpp_azure
-  data_list: ./data/dataset.csv
+  data_list: ./data/dataset_planes.csv
   data_root: LocalUpload/5ddcd6ec991c932d128cccbb188a52b3/P2MPP/
   batch_size: 4
   test_size: 0.2
   seed: 42
-  num_workers: 8
+  num_workers: 4
   num_points: 9000

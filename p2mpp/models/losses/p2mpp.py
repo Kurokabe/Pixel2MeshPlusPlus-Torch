@@ -132,16 +132,16 @@ class P2MPPLoss(nn.Module):
         chamfer_loss += self.chamfer_weights[2] * (
             torch.mean(dist1) + torch.mean(dist2)
         )
-        normal_loss += self.normal_loss(gt_normal, idx2_v, pred_coord, self.edges[2])
-        edge_loss += self.edge_regularization(pred_coord, self.edges[2])
-        lap, move = self.laplace_regularization(pred_coord_before_deform, pred_coord, 2)
-        lap_loss += lap_const[2] * lap
+        normal_loss += self.normal_loss(gt_normal, idx2_v, pred_coord, self.edges[0])
+        edge_loss += self.edge_regularization(pred_coord, self.edges[0])
+        # lap, move = self.laplace_regularization(pred_coord_before_deform, pred_coord, 2)
+        # lap_loss += lap_const[2] * lap
 
         loss = (
             chamfer_loss
             + self.normal_weights * normal_loss
             + self.edge_weights * edge_loss
-            + self.laplace_weights * lap_loss
+            # + self.laplace_weights * lap_loss
         )
 
         loss = loss * self.constant_weights

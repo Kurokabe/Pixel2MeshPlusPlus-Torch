@@ -57,9 +57,9 @@ class LightningModuleP2MPP(pl.LightningModule):
         self.num_iterations = p2mpp_config.num_iterations
 
         basemesh_config = p2mpp_config.base_mesh_config
-        ellipsoid = Ellipsoid(basemesh_config.mesh_pose)
+        self.ellipsoid = Ellipsoid(basemesh_config.mesh_pose)
 
-        self.criterion = P2MPPLoss(loss_config=p2mpp_loss_config, ellipsoid=ellipsoid)
+        self.criterion = P2MPPLoss(loss_config=p2mpp_loss_config, ellipsoid=self.ellipsoid)
 
         self.optimizer = torch.optim.Adam(
             params=list(self.p2mpp_model.parameters()),
@@ -70,7 +70,7 @@ class LightningModuleP2MPP(pl.LightningModule):
 
         self.train_sample_outputs = []
         self.validation_sample_outputs = []
-        self.num_samples_to_visualize = 6
+        self.num_samples_to_visualize = 4
 
     def create_hypothesis_shape(self, name: str):
         if name == "icosahedron":
@@ -79,10 +79,13 @@ class LightningModuleP2MPP(pl.LightningModule):
             raise ValueError(f"Unknown hypothesis shape: {name}")
 
     def forward(self, images, poses):
-        with torch.no_grad():
-            coarse_pred = self.p2m_model(images.detach().clone(), poses)
+        # with torch.no_grad():
+        #     coarse_pred = self.p2m_model(images.detach().clone(), poses)
+        batch_size = images.size(0)
+        coarse_pred = self.p2m_model.init_pts.data.unsqueeze(0).expand(batch_size, -1, -1)
 
-        coarse_vertices = coarse_pred["pred_coord"][2]
+        # coarse_vertices = coarse_pred["pred_coord"][2]
+        coarse_vertices = coarse_pred.cuda()
         input_vertices = coarse_vertices
         for i in range(self.num_iterations):
             fine_pred = self.p2mpp_model(input_vertices, images.clone(), poses)
@@ -116,18 +119,22 @@ class LightningModuleP2MPP(pl.LightningModule):
 
     def on_train_epoch_end(self):
         input_batch, fine_pred, coarse_pred = self.train_sample_outputs[0]
+        faces = self.ellipsoid.faces[0].unsqueeze(0).expand(self.num_samples_to_visualize, -1, -1)
 
         self.logger.experiment.add_mesh(
-            "train/mesh_gt", input_batch["points"][:6], global_step=self.current_epoch
+            "train/mesh_gt", input_batch["points"][:self.num_samples_to_visualize], global_step=self.current_epoch
         )
         self.logger.experiment.add_mesh(
             "train/mesh_coarse_pred",
-            coarse_pred["pred_coord"][2][:6],
+            # coarse_pred["pred_coord"][2][:self.num_samples_to_visualize],
+            coarse_pred[:self.num_samples_to_visualize],
+            faces=faces,
             global_step=self.current_epoch,
         )
         self.logger.experiment.add_mesh(
             "train/mesh_fine_pred",
-            fine_pred["pred_coord"][:6],
+            fine_pred["pred_coord"][:self.num_samples_to_visualize],
+            faces=faces,
             global_step=self.current_epoch,
         )
 
@@ -156,18 +163,24 @@ class LightningModuleP2MPP(pl.LightningModule):
 
     def on_validation_epoch_end(self):
         input_batch, fine_pred, coarse_pred = self.validation_sample_outputs[0]
+        
+        faces = self.ellipsoid.faces[0].unsqueeze(0).expand(self.num_samples_to_visualize, -1, -1)
 
         self.logger.experiment.add_mesh(
-            "val/mesh_gt", input_batch["points"][:6], global_step=self.current_epoch
+            "val/mesh_gt", input_batch["points"][:self.num_samples_to_visualize], 
+            global_step=self.current_epoch,
         )
         self.logger.experiment.add_mesh(
             "val/mesh_coarse_pred",
-            coarse_pred["pred_coord"][2][:6],
+            # coarse_pred["pred_coord"][2][:self.num_samples_to_visualize],
+            coarse_pred[:self.num_samples_to_visualize],
+            faces=faces,
             global_step=self.current_epoch,
         )
         self.logger.experiment.add_mesh(
             "val/mesh_fine_pred",
-            fine_pred["pred_coord"][:6],
+            fine_pred["pred_coord"][:self.num_samples_to_visualize],
+            faces=faces,
             global_step=self.current_epoch,
         )
 

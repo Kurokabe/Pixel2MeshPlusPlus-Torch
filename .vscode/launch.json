@@ -16,7 +16,7 @@
                 "--config",
                 "configs/p2mpp/default_azure.yaml",
                 "--ckpt_path",
-                "lightning_logs/p2mpp/version_0/checkpoints/epoch=49-step=6250.ckpt"
+                "lightning_logs/p2mpp/version_21/checkpoints/epoch=173-step=1740.ckpt"
             ]
         },
         {
